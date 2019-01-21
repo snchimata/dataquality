@@ -1,7 +1,7 @@
 Package: dataquality
 Type: Package
 Title: Data Quality Report for Dataframes
-Version: 0.1.0
+Version: 0.1.1
 Author: Sai Chimata
 Maintainer: Sai Chimata <snnchimata@gmail.com>
 Depends:
