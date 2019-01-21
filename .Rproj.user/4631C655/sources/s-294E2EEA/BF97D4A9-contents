@@ -1,0 +1,378 @@
+lbs <- c("dbplyr","DBI","dplyr","RMySQL")
+sapply(lbs, function(x) require(x,character.only = TRUE) || {install.packages(x);library(x,character.only = TRUE)} )
+
+
+
+
+#DSN Connection
+library(DBI)
+con <- dbConnect(odbc::odbc(), "Impala")
+
+#Drivers list
+library(odbc)
+odbcListDrivers()[1:2]
+
+#Manual connection with Inputs
+impala <- dbConnect(
+  drv = odbc::odbc(),
+  driver = "Impala",
+  host = "ybolcldr03.yotabites.com",
+  port = 21050,
+  database = "default",
+  uid = "schimata",
+  pwd = rstudioapi::askForPassword("Database password"),
+  SSL             =1,
+  TrustedCerts    ="/opt/cloudera/security/CAcerts/root.pem",
+  ThriftTransport =1,
+  AuthMech        =1
+)
+
+# Hive - Cloudera Method
+con <- DBI::dbConnect(odbc::odbc(),
+                      Driver = "/opt/odbc-drivers/hive/bin/lib/libhiveodbc_sb64.so",
+                      Host   = "ybolcldrmstr.yotabites.com",
+                      Schema = "default",
+                      UID    = rstudioapi::askForPassword("Database user"),
+                      PWD    = rstudioapi::askForPassword("Database password"),
+                      Port   = 10000,
+                      TrustedCerts    ="/opt/cloudera/security/CAcerts/root.pem",
+                      ThriftTransport =1,
+                      SSL    = 1)
+
+#Alternative - Rstudio Method
+con <- dbConnect(
+  odbc::odbc(),
+  Driver = "/opt/odbc-drivers/hive/bin/lib/libhiveodbc_sb64.so",
+  host = "ybolcldrmstr.yotabites.com",
+  UID    = rstudioapi::askForPassword("Database user"),
+  PWD    = rstudioapi::askForPassword("Database password"),
+  Port = 10000,
+  Database = "ybkeralatrainee",
+  TrustedCerts    ="/opt/cloudera/security/CAcerts/root.pem",
+  ThriftTransport =1,
+  SSL    = 1
+)
+
+
+#Impala Connection with Inputs
+con <- DBI::dbConnect(odbc::odbc(),
+                      Driver = "/opt/odbc-drivers/impala/bin/lib/libimpalaodbc_sb64.so",
+                      Host   = "ybolcldr02.yotabites.com",
+                      #Schema = "default",
+                      UID    = rstudioapi::askForPassword("Database user"),
+                      PWD    = rstudioapi::askForPassword("Database password"),
+                      Port   = 10000,
+                      TrustedCerts    ="/opt/cloudera/security/CAcerts/root.pem",
+                      ThriftTransport =1,
+                      SSL    = 1)
+
+
+# External file
+library(odbc)
+library(yaml)
+library(RMySQL)
+library(dplyr)
+library(dbplyr)
+setwd("~/")
+conf <- yaml.load_file("~/config.yml")
+dw <- conf[["mysql"]]
+con = dbConnect(MySQL(), host=dw$SERVER, dbname= 'development', user=dw$USER, password=dw$Password)
+icon <- dbConnect(odbc::odbc(), "Impala")
+
+dplyr::db_list_tables(icon)
+RMySQL::dbListTables(con)
+df_mydb <- dbGetQuery(con, "SELECT * from development.sales_table")
+df_mydbi <- dbGetQuery(icon, "SELECT * from default.emp4")
+View(df_mydb)
+
+#Disconnect from DB
+odbc::dbDisconnect(con)
+odbc::dbDisconnect(icon)
+
+
+########Dplyr Basics#####
+
+
+library(dplyr)
+library(dbplyr)
+library(DBI)
+
+
+# Functions to create a reference to a table
+Alphabet <- tbl(con, in_schema("development", "Alphabet"))
+Sales <- tbl(con, in_schema("development", "sales_table"))
+
+Alphabet #Data can be previewed using the pointer variable but it is not stored
+
+#To preview the SQL statement that will be sent to the database
+
+show_query(Alphabet)
+
+Alphabet %>%  show_query()
+
+Alphabet %>%  head(10) %>%  show_query()
+
+#To simulate the SQL statement like SQLServer
+Alphabet %>%  head(10) %>%  sql_render(con = simulate_mssql()) 
+
+Alphabet %>%  mutate(today = Sys.time()) %>%  show_query()
+
+Alphabet %>%  mutate(today = now()) %>%  select(today) %>%  head()
+
+Alphabet %>%  mutate(today = !!Sys.time()) %>%  show_query()
+
+
+##Aggregations
+
+#Counts
+tbl(con, in_schema("default", "Alphabet"))  %>%  tally()
+
+#Summarize
+Alphabet %>%
+  summarise(
+    mean_volume = mean(Volume, na.rm = TRUE),
+    max_value = max(High),
+    min_airport_name = min(Low),
+    total_records = n()
+  )
+
+Alphabet %>%  summarise(x = max(volume, na.rm = TRUE))
+
+
+
+########Data transformation############
+
+#Group and Sort
+Sales %>%  group_by(product,payment_type) %>%  tally()  %>% arrange(desc(n)) %>% head(6)
+
+# Issues with latest dplyr update 
+# https://community.rstudio.com/t/trouble-using-mutate-and-other-functions-after-update/17066/4
+
+#get dplyr >= 0.7.8
+df_mydb %>%  group_by(product,payment_type) %>%  tally() %>% arrange(desc(n))%>% mutate(percent = n/sum(n, na.rm = TRUE))
+
+# Summary/Aggregation of multiple columns
+Alphabet %>%select(High,Low)%>%  summarise_all(mean, na.rm = TRUE)
+
+iris %>% summarise_all(funs(mean))
+
+Alphabet %>%
+  summarise_at(c("depdelay", "arrdelay"), mean, na.rm = TRUE)
+
+Alphabet %>%
+  summarise_if(is.numeric,mean, na.rm = TRUE)
+
+Sales %>%select(product,price)%>% group_by(product)%>%  summarise_all(mean, na.rm = TRUE)
+
+# Filter/Record level Data
+
+Sales %>% 
+  filter(
+    price >= 1200,
+    product == "product1",
+    county == "United States"
+  ) %>%
+  tally() #or head() to check sample
+
+#Collect and View
+
+Sales %>% 
+  filter(
+    price >= 1200,
+    product == "product1",
+    county == "United States"
+  ) %>%
+  collect() %>%
+  head(100)                        # -> demo #to collect data into demo variable
+View("my_preview")
+
+#Data Enrichement - addition of data to DB
+
+planes <- nycflights13::planes
+planes%>%mutate(product = case_when(engines ==1 ~ "Product1",
+                                    engines ==2 ~ "Product2",
+                                    engines ==3 ~ "Product3",
+                                    engines ==4 ~ "Product4")) -> planes
+dbWriteTable(con, "planes", planes, temporary = TRUE)
+tbl_plane <- tbl(con, "planes")
+head(tbl_plane)
+
+flights <- nycflights13::flights
+dbWriteTable(con, "flights", flights, temporary = TRUE)
+tbl_flight <- tbl(con, "flights")
+
+#dbWriteTable(icon, "flights", flights, temporary = TRUE)
+#tbl_flight <- tbl(icon, "flights")
+
+combined <- Sales %>%left_join(tbl_plane, by = c("product"="product"))
+
+#Alphabet %>% as.Date(Date , format = guess_formats(Date,c('dmy HM','dBy HM')))
+
+combined %>%
+  filter(engines >= 3) %>%
+  head()
+
+combined %>%
+  filter(manufacturer == "MCDONNELL DOUGLAS") %>%
+  group_by(engines) #%>%collect()%>%View()
+tally() 
+
+
+combined %>%
+  filter(manufacturer == "MCDONNELL DOUGLAS") %>%
+  group_by(tailnum) %>%
+  tally() %>%
+  summarise(planes = n(),
+            avg_flights = mean(n, na.rm = TRUE),
+            max_flights = max(n, na.rm = TRUE),
+            min_flights = min(n, na.rm = TRUE))
+
+
+###Visualizations
+
+by_month <- 
+  tbl_plane %>%
+  group_by(year) %>%
+  tally() %>%
+  mutate(n = as.integer(n)) %>%
+  collect() 
+
+head(by_month)
+
+library(ggplot2)
+theme_set(theme_light())
+
+Z = ggplot(by_month) +
+  geom_line(aes(x = year, y = n)) 
+
+ggplotly(Z)
+
+#Without collecting data into a variable
+tbl_mtcar %>%
+  group_by(gear) %>%
+  summarise(x = mean(mpg, na.rm = TRUE)) %>%
+  mutate(x = as.integer(x)) %>%
+  collect() %>%
+  ggplot() +
+  geom_line(aes(x = gear, y = x)) 
+
+## Plot specific data segments
+tbl_flight %>%
+  group_by(carrier) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  head(5) %>%
+  collect() %>%
+  ggplot() +
+  geom_col(aes(x = carrier, y = n, fill = n)) +
+  theme(legend.position="none") +
+  #coord_flip() +  # Rotate cols into rows
+  labs(title = "Top 5 Carriers", 
+       subtitle = "Source: Datawarehouse",
+       x = "Carrier Name", 
+       y = "# of Flights")
+
+#To pull data into vectors
+top5 <- tbl_flight %>%
+  group_by(carrier) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  head(5) %>%
+  pull(carrier)
+
+top5
+
+tbl_flight %>%
+  filter(carrier %in% top5) %>%
+  group_by(carrier) %>%
+  summarise(n = mean(arr_delay, na.rm = TRUE))
+
+# Visualize using dbplot
+
+tbl_flight %>%
+  dbplot_line(month)+
+  labs(title = "Monthly flights",
+       x = "Month",
+       y = "Number of flights") +
+  scale_x_continuous(breaks = 1:12)
+
+tbl_flight %>%
+  dbplot_bar(month, mean(dep_delay, na.rm = TRUE))  +
+  scale_x_continuous(
+    labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+    breaks = 1:12
+  )
+
+
+#Histogram
+flights %>%
+  dbplot_histogram(distance, binwidth = 300)
+
+#Raster plot
+flights %>%
+  dbplot_raster(dep_time, arr_time, resolution = 500)
+
+
+#To check underlying plot data
+departure <- flights %>%
+  db_compute_raster(dep_time, arr_time)
+
+departure %>%
+  filter(`n()` > 1000) %>%
+  ggplot() +
+  geom_raster(aes(x = dep_time, y = arr_time, fill = `n()`))
+
+
+
+
+##Model
+
+model_data <- tbl_flight %>%
+  mutate(
+    season = case_when(
+      month >= 3 & month <= 5  ~ "Spring",
+      month >= 6 & month <= 8  ~ "Summmer",
+      month >= 9 & month <= 11 ~ "Fall",
+      month == 12 | month <= 2  ~ "Winter"
+    )
+  ) %>%
+  select(dep_delay,season,arr_delay)
+
+model_lm <- lm(dep_delay ~ season+arr_delay, data = model_data)
+#model <- lm(dep_delay ~ year+month+arr_delay, data = tbl_flight)
+
+summary(model_lm)
+
+test_sample <- head(model_data,10) %>% collect()
+
+#predict
+test_sample %>%
+  mutate(p = predict(model_lm, test_sample),
+         over = abs(p - arr_delay) < 10) %>%
+  group_by(over) %>% 
+  tally() %>%
+  mutate(percent = round(n / sum(n), 2))
+
+#or predict
+test_sample %>%
+  tidypredict_to_column(model_lm) %>%
+  head(10)
+
+tidypredict_fit(model_lm)
+
+test <- tidypredict_test(model_lm)
+test
+
+#check results - records exceeding threshold
+test$raw_results %>%
+  filter(fit_threshold)
+
+#Model parser
+pm <- parse_model(model_lm)
+pm
+
+
+###Spark
+
+sc <- spark_connect(master = "local", version = "1.6.0")
+sc <- spark_connect(master = "yarn-client", version="2.1.0", spark_home = '/opt/cloudera/parcels/CDH/lib/spark/')

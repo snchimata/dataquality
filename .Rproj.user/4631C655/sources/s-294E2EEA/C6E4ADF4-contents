@@ -1,0 +1,12 @@
+\name{dataquality}
+\alias{dataquality}
+\title{dataquality}
+\usage{
+dataquality()
+}
+\description{
+Prints 'Hello, world!'.
+}
+\examples{
+DQR(mtcars)
+}
