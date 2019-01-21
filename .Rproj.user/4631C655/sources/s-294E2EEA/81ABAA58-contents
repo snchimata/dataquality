@@ -10,6 +10,6 @@ Description: Provides a tool to assess the quality and various parameters of the
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Imports: dplyr
+Imports: dplyr,stats
 Suggests: 
 RoxygenNote: 6.1.1

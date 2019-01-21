@@ -29,13 +29,13 @@ DQR <- function(df) {
   Minimum = apply(dplyr::select_if(df, is.numeric), 2, function(x) min(x, na.rm = T)),
   Maximum = apply(dplyr::select_if(df, is.numeric), 2, function(x) max(x, na.rm = T)),
   Mean = apply(dplyr::select_if(df, is.numeric), 2, function(x) mean(x, na.rm = T)),
-  fifthpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) quantile(x, p = 0.05, na.rm = T)),
-  tenthpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) quantile(x, p = 0.10, na.rm = T)),
-  twentyfifthpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) quantile(x, p = 0.25, na.rm = T)),
-  fiftythpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) quantile(x, p = 0.50, na.rm = T)),
-  sevenyfifthpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) quantile(x, p = 0.75, na.rm = T)),
-  ninethpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) quantile(x, p = 0.90, na.rm = T)),
-  ninetyfifthpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) quantile(x, p = 0.95, na.rm = T))
+  FifthPercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) stats::quantile(x, p = 0.05, na.rm = T)),
+  TenthPercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) stats::quantile(x, p = 0.10, na.rm = T)),
+  TwentyfifthPercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) stats::quantile(x, p = 0.25, na.rm = T)),
+  FiftythPercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) stats::quantile(x, p = 0.50, na.rm = T)),
+  SevenyfifthPercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) stats::quantile(x, p = 0.75, na.rm = T)),
+  NinethPercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) stats::quantile(x, p = 0.90, na.rm = T)),
+  Ninetyfifthpercentile = apply(dplyr::select_if(df, is.numeric), 2, function(x) stats::quantile(x, p = 0.95, na.rm = T))
 
 )
 }

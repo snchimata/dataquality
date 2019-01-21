@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "0",
+    "hash" : "4290519604",
     "id" : "80F34E2C",
-    "lastKnownWriteTime" : 1548109610,
-    "last_content_update" : 1548109610216,
+    "lastKnownWriteTime" : 1548111864,
+    "last_content_update" : 1548111864711,
     "path" : "~/Projects/2019/dataquality/R/dataquality.R",
     "project_path" : "R/dataquality.R",
     "properties" : {
-        "cursorPosition" : "12,0",
-        "scrollLine" : "0"
+        "cursorPosition" : "36,3",
+        "scrollLine" : "23"
     },
     "relative_order" : 1,
     "source_on_save" : false,

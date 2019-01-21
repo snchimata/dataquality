@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1078262654",
+    "hash" : "0",
     "id" : "40E5C01F",
     "lastKnownWriteTime" : 1548109594,
     "last_content_update" : 1548109594138,
     "path" : "~/Projects/2019/dataquality/man/DQR.Rd",
     "project_path" : "man/DQR.Rd",
     "properties" : {
-        "cursorPosition" : "14,0",
-        "scrollLine" : "0"
+        "cursorPosition" : "10,0",
+        "scrollLine" : "2"
     },
     "relative_order" : 4,
     "source_on_save" : false,
